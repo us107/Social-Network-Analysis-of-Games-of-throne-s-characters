@@ -50,7 +50,7 @@ We build undirected weighted graphs for each season using NetworkX, where:
 *Character interaction network for Season 1, showing the complex web of relationships*
 
 ### Interactive Network Visualization
-![Interactive Network]()
+![Interactive Network](https://github.com/user-attachments/assets/639c548c-a47b-473b-869d-80203441ab25)
 *Interactive PyVis visualization allowing zoom, pan, and node exploration*
 
 ## 🔍 Key Findings
