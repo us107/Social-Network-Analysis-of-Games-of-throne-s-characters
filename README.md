@@ -46,42 +46,29 @@ We build undirected weighted graphs for each season using NetworkX, where:
 ## 📊 Visualizations
 
 ### Season 1 Character Network
-![Season 1 Network Graph](figures/season1_network.png)
+![Season 1 Network Graph](fig.png)
 *Character interaction network for Season 1, showing the complex web of relationships*
 
 ### Interactive Network Visualization
-![Interactive Network](figures/interactive_network.gif)
+![Interactive Network]()
 *Interactive PyVis visualization allowing zoom, pan, and node exploration*
 
 ## 🔍 Key Findings
 
 ### Top 10 Most Central Characters (Season 1)
 
-Top 10 Central Characters (Season 1):
-       Character  Degree Centrality  Betweenness Centrality  \
-0            NED              0.456                0.205509   
-13        TYRION              0.328                0.099051   
-10       CATELYN              0.288                0.071880   
-1         ROBERT              0.288                0.079635   
-11          ROBB              0.240                0.068237   
-14        CERSEI              0.232                0.070366   
-9           ARYA              0.224                0.041682   
-16       JOFFREY              0.216                0.043190   
-6   LITTLEFINGER              0.208                0.027003   
-4            JON              0.208                0.029784   
-
-    
-  Closeness Centrality  
-0               0.628141  
-13              0.543478  
-10              0.550661  
-1               0.553097  
-11              0.512295  
-14              0.508130  
-9               0.502008  
-16              0.510204  
-6               0.477099  
-4               0.518672  
+| Rank | Character | Degree Centrality | Betweenness Centrality | Closeness Centrality |
+|------|-----------|-------------------|------------------------|----------------------|
+| 1 | NED | 0.456 | 0.206 | 0.628 |
+| 2 | TYRION | 0.328 | 0.099 | 0.543 |
+| 3 | CATELYN | 0.288 | 0.072 | 0.551 |
+| 4 | ROBERT | 0.288 | 0.080 | 0.553 |
+| 5 | ROBB | 0.240 | 0.068 | 0.512 |
+| 6 | CERSEI | 0.232 | 0.070 | 0.508 |
+| 7 | ARYA | 0.224 | 0.042 | 0.502 |
+| 8 | JOFFREY | 0.216 | 0.043 | 0.510 |
+| 9 | LITTLEFINGER | 0.208 | 0.027 | 0.477 |
+| 10 | JON | 0.208 | 0.030 | 0.519 |
 
 ### Narrative Importance Score (NIS)
 Our innovative NIS metric combines multiple centrality measures:
@@ -90,13 +77,13 @@ NIS = 0.5 × Degree + 0.3 × Betweenness + 0.2 × Closeness
 ```
 
 ### Top Characters by NIS
-![NIS Rankings](figures/nis_rankings.png)
+![NIS Rankings](fig1.png)
 *Characters ranked by their Narrative Importance Score*
 
 ## 📉 Character Evolution Analysis
 
 ### Centrality Over Time
-![Character Evolution](figures/character_evolution.png)
+![Character Evolution](fig2.png)
 *Evolution of character importance from Season 1 to 7*
 
 Key observations:
@@ -118,9 +105,9 @@ Key observations:
 3. **Closeness Centrality**: Measures network accessibility
    - *Interpretation*: Characters central to the overall narrative
 
-### Network Statistics
-![Network Statistics](figures/network_stats.png)
-*Comparative analysis of centrality metrics across characters*
+### NIS vs Degree centrality
+![Network Statistics](fig3.png)
+*Comparative analysis of metrics across characters*
 
 ## 💡 Insights & Applications
 
@@ -150,14 +137,6 @@ This methodology can be applied to:
 | Betweenness | O(V³) | O(V²) |
 | Closeness | O(V²) | O(V) |
 
-## 🎯 Future Enhancements
-
-- [ ] Sentiment analysis of character dialogues
-- [ ] Machine learning for death prediction
-- [ ] Community detection algorithms
-- [ ] Real-time streaming data analysis
-- [ ] Integration with NLP for script analysis
-- [ ] Mobile-responsive interactive dashboards
 
 ## 👥 Contributing
 
@@ -173,5 +152,5 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ## Team Work
 - Trisha Sharma
 - Anahita Bhandari
-  Made with ❤️ by [Your Name] | ⭐ Star this repo if you find it helpful!
-</p>
+  
+
