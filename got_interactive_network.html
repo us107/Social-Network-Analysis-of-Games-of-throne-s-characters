@@ -1,0 +1,452 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #111111;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 750px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white"}, "id": "NED", "label": "NED", "shape": "dot", "size": 114, "title": "NED \u2014 Degree: 57"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ROBERT", "label": "ROBERT", "shape": "dot", "size": 72, "title": "ROBERT \u2014 Degree: 36"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LITTLEFINGER", "label": "LITTLEFINGER", "shape": "dot", "size": 52, "title": "LITTLEFINGER \u2014 Degree: 26"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "VARYS", "label": "VARYS", "shape": "dot", "size": 42, "title": "VARYS \u2014 Degree: 21"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ARYA", "label": "ARYA", "shape": "dot", "size": 56, "title": "ARYA \u2014 Degree: 28"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "CERSEI", "label": "CERSEI", "shape": "dot", "size": 58, "title": "CERSEI \u2014 Degree: 29"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "CATELYN", "label": "CATELYN", "shape": "dot", "size": 72, "title": "CATELYN \u2014 Degree: 36"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "PYCELLE", "label": "PYCELLE", "shape": "dot", "size": 32, "title": "PYCELLE \u2014 Degree: 16"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JAIME", "label": "JAIME", "shape": "dot", "size": 48, "title": "JAIME \u2014 Degree: 24"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "SANSA", "label": "SANSA", "shape": "dot", "size": 52, "title": "SANSA \u2014 Degree: 26"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JORY_CASSEL", "label": "JORY_CASSEL", "shape": "dot", "size": 16, "title": "JORY_CASSEL \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JOFFREY", "label": "JOFFREY", "shape": "dot", "size": 54, "title": "JOFFREY \u2014 Degree: 27"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RENLY", "label": "RENLY", "shape": "dot", "size": 34, "title": "RENLY \u2014 Degree: 17"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BRAN", "label": "BRAN", "shape": "dot", "size": 40, "title": "BRAN \u2014 Degree: 20"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JON", "label": "JON", "shape": "dot", "size": 52, "title": "JON \u2014 Degree: 26"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BARRISTAN", "label": "BARRISTAN", "shape": "dot", "size": 22, "title": "BARRISTAN \u2014 Degree: 11"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ROBB", "label": "ROBB", "shape": "dot", "size": 60, "title": "ROBB \u2014 Degree: 30"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "YOREN", "label": "YOREN", "shape": "dot", "size": 32, "title": "YOREN \u2014 Degree: 16"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BENJEN", "label": "BENJEN", "shape": "dot", "size": 18, "title": "BENJEN \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JANOS", "label": "JANOS", "shape": "dot", "size": 10, "title": "JANOS \u2014 Degree: 5"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "THEON", "label": "THEON", "shape": "dot", "size": 38, "title": "THEON \u2014 Degree: 19"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "GENDRY", "label": "GENDRY", "shape": "dot", "size": 12, "title": "GENDRY \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JON_ARRYN", "label": "JON_ARRYN", "shape": "dot", "size": 22, "title": "JON_ARRYN \u2014 Degree: 11"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "TYRION", "label": "TYRION", "shape": "dot", "size": 82, "title": "TYRION \u2014 Degree: 41"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "TYWIN", "label": "TYWIN", "shape": "dot", "size": 34, "title": "TYWIN \u2014 Degree: 17"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "HOUND", "label": "HOUND", "shape": "dot", "size": 36, "title": "HOUND \u2014 Degree: 18"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RODRIK", "label": "RODRIK", "shape": "dot", "size": 26, "title": "RODRIK \u2014 Degree: 13"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "STANNIS", "label": "STANNIS", "shape": "dot", "size": 18, "title": "STANNIS \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "TOBHO_MOTT", "label": "TOBHO_MOTT", "shape": "dot", "size": 4, "title": "TOBHO_MOTT \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MHAEGEN", "label": "MHAEGEN", "shape": "dot", "size": 6, "title": "MHAEGEN \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "SEPTA_MORDANE", "label": "SEPTA_MORDANE", "shape": "dot", "size": 12, "title": "SEPTA_MORDANE \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "AERYS", "label": "AERYS", "shape": "dot", "size": 26, "title": "AERYS \u2014 Degree: 13"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BAELOR", "label": "BAELOR", "shape": "dot", "size": 18, "title": "BAELOR \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "HUGH_OF_THE_VALE", "label": "HUGH_OF_THE_VALE", "shape": "dot", "size": 12, "title": "HUGH_OF_THE_VALE \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "SYRIO_FOREL", "label": "SYRIO_FOREL", "shape": "dot", "size": 6, "title": "SYRIO_FOREL \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "TOMARD", "label": "TOMARD", "shape": "dot", "size": 6, "title": "TOMARD \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MAESTER_LUWIN", "label": "MAESTER_LUWIN", "shape": "dot", "size": 20, "title": "MAESTER_LUWIN \u2014 Degree: 10"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MOUNTAIN", "label": "MOUNTAIN", "shape": "dot", "size": 14, "title": "MOUNTAIN \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ILYN_PAYNE", "label": "ILYN_PAYNE", "shape": "dot", "size": 20, "title": "ILYN_PAYNE \u2014 Degree: 10"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LANCEL", "label": "LANCEL", "shape": "dot", "size": 10, "title": "LANCEL \u2014 Degree: 5"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LORAS", "label": "LORAS", "shape": "dot", "size": 16, "title": "LORAS \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LYANNA", "label": "LYANNA", "shape": "dot", "size": 6, "title": "LYANNA \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RICKARD_STARK", "label": "RICKARD_STARK", "shape": "dot", "size": 8, "title": "RICKARD_STARK \u2014 Degree: 4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BERIC", "label": "BERIC", "shape": "dot", "size": 4, "title": "BERIC \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BRANDON_STARK", "label": "BRANDON_STARK", "shape": "dot", "size": 10, "title": "BRANDON_STARK \u2014 Degree: 5"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "DAENERYS", "label": "DAENERYS", "shape": "dot", "size": 36, "title": "DAENERYS \u2014 Degree: 18"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JEOR", "label": "JEOR", "shape": "dot", "size": 32, "title": "JEOR \u2014 Degree: 16"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MERYN_TRANT", "label": "MERYN_TRANT", "shape": "dot", "size": 18, "title": "MERYN_TRANT \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MYCAH", "label": "MYCAH", "shape": "dot", "size": 8, "title": "MYCAH \u2014 Degree: 4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "PYP", "label": "PYP", "shape": "dot", "size": 32, "title": "PYP \u2014 Degree: 16"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "WILL", "label": "WILL", "shape": "dot", "size": 16, "title": "WILL \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "GREATJON_UMBER", "label": "GREATJON_UMBER", "shape": "dot", "size": 24, "title": "GREATJON_UMBER \u2014 Degree: 12"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "HIGH_SEPTON", "label": "HIGH_SEPTON", "shape": "dot", "size": 2, "title": "HIGH_SEPTON \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JORAH", "label": "JORAH", "shape": "dot", "size": 30, "title": "JORAH \u2014 Degree: 15"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ROOSE_BOLTON", "label": "ROOSE_BOLTON", "shape": "dot", "size": 2, "title": "ROOSE_BOLTON \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ROS", "label": "ROS", "shape": "dot", "size": 18, "title": "ROS \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "STEFFON", "label": "STEFFON", "shape": "dot", "size": 2, "title": "STEFFON \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "VARLY", "label": "VARLY", "shape": "dot", "size": 2, "title": "VARLY \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "VISERYS", "label": "VISERYS", "shape": "dot", "size": 18, "title": "VISERYS \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "DROGO", "label": "DROGO", "shape": "dot", "size": 26, "title": "DROGO \u2014 Degree: 13"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RHAEGAR", "label": "RHAEGAR", "shape": "dot", "size": 4, "title": "RHAEGAR \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "TOMMEN", "label": "TOMMEN", "shape": "dot", "size": 4, "title": "TOMMEN \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MIRRI_MAZ_DUUR", "label": "MIRRI_MAZ_DUUR", "shape": "dot", "size": 10, "title": "MIRRI_MAZ_DUUR \u2014 Degree: 5"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "DOREAH", "label": "DOREAH", "shape": "dot", "size": 16, "title": "DOREAH \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "IRRI", "label": "IRRI", "shape": "dot", "size": 14, "title": "IRRI \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "QOTHO", "label": "QOTHO", "shape": "dot", "size": 10, "title": "QOTHO \u2014 Degree: 5"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "WINE_MERCHANT", "label": "WINE_MERCHANT", "shape": "dot", "size": 8, "title": "WINE_MERCHANT \u2014 Degree: 4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RAKHARO", "label": "RAKHARO", "shape": "dot", "size": 16, "title": "RAKHARO \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RHAEGO", "label": "RHAEGO", "shape": "dot", "size": 8, "title": "RHAEGO \u2014 Degree: 4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ILLYRIO", "label": "ILLYRIO", "shape": "dot", "size": 12, "title": "ILLYRIO \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MAGO", "label": "MAGO", "shape": "dot", "size": 4, "title": "MAGO \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JHIQUI", "label": "JHIQUI", "shape": "dot", "size": 6, "title": "JHIQUI \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LITTLE_BIRD", "label": "LITTLE_BIRD", "shape": "dot", "size": 2, "title": "LITTLE_BIRD \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "SAM", "label": "SAM", "shape": "dot", "size": 24, "title": "SAM \u2014 Degree: 12"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MAESTER_AEMON", "label": "MAESTER_AEMON", "shape": "dot", "size": 18, "title": "MAESTER_AEMON \u2014 Degree: 9"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "GRENN", "label": "GRENN", "shape": "dot", "size": 16, "title": "GRENN \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ALLISER_THORNE", "label": "ALLISER_THORNE", "shape": "dot", "size": 16, "title": "ALLISER_THORNE \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RAST", "label": "RAST", "shape": "dot", "size": 14, "title": "RAST \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "OTHELL_YARWYCK", "label": "OTHELL_YARWYCK", "shape": "dot", "size": 12, "title": "OTHELL_YARWYCK \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "OTHOR", "label": "OTHOR", "shape": "dot", "size": 8, "title": "OTHOR \u2014 Degree: 4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "DAREON", "label": "DAREON", "shape": "dot", "size": 20, "title": "DAREON \u2014 Degree: 10"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MELESSA", "label": "MELESSA", "shape": "dot", "size": 2, "title": "MELESSA \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RANDYLL", "label": "RANDYLL", "shape": "dot", "size": 2, "title": "RANDYLL \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "COHOLLO", "label": "COHOLLO", "shape": "dot", "size": 2, "title": "COHOLLO \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "STABLE_BOY", "label": "STABLE_BOY", "shape": "dot", "size": 2, "title": "STABLE_BOY \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "HOT_PIE", "label": "HOT_PIE", "shape": "dot", "size": 6, "title": "HOT_PIE \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LOMMY_GREENHANDS", "label": "LOMMY_GREENHANDS", "shape": "dot", "size": 4, "title": "LOMMY_GREENHANDS \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "WALDER", "label": "WALDER", "shape": "dot", "size": 16, "title": "WALDER \u2014 Degree: 8"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LYSA", "label": "LYSA", "shape": "dot", "size": 14, "title": "LYSA \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "VARDIS_EGEN", "label": "VARDIS_EGEN", "shape": "dot", "size": 12, "title": "VARDIS_EGEN \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ROBIN", "label": "ROBIN", "shape": "dot", "size": 14, "title": "ROBIN \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BRONN", "label": "BRONN", "shape": "dot", "size": 24, "title": "BRONN \u2014 Degree: 12"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MORD", "label": "MORD", "shape": "dot", "size": 14, "title": "MORD \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MARILLION", "label": "MARILLION", "shape": "dot", "size": 14, "title": "MARILLION \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ASSASSIN", "label": "ASSASSIN", "shape": "dot", "size": 6, "title": "ASSASSIN \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "HOSTER", "label": "HOSTER", "shape": "dot", "size": 4, "title": "HOSTER \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MASHA_HEDDLE", "label": "MASHA_HEDDLE", "shape": "dot", "size": 4, "title": "MASHA_HEDDLE \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "STEVRON_FREY", "label": "STEVRON_FREY", "shape": "dot", "size": 4, "title": "STEVRON_FREY \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "OSHA", "label": "OSHA", "shape": "dot", "size": 12, "title": "OSHA \u2014 Degree: 6"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JONOS_BRACKEN", "label": "JONOS_BRACKEN", "shape": "dot", "size": 4, "title": "JONOS_BRACKEN \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "OLD_NAN", "label": "OLD_NAN", "shape": "dot", "size": 6, "title": "OLD_NAN \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "HODOR", "label": "HODOR", "shape": "dot", "size": 10, "title": "HODOR \u2014 Degree: 5"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RICKON", "label": "RICKON", "shape": "dot", "size": 6, "title": "RICKON \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "GALBART_GLOVER", "label": "GALBART_GLOVER", "shape": "dot", "size": 6, "title": "GALBART_GLOVER \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RICKARD_KARSTARK", "label": "RICKARD_KARSTARK", "shape": "dot", "size": 6, "title": "RICKARD_KARSTARK \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "SHAE", "label": "SHAE", "shape": "dot", "size": 6, "title": "SHAE \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "SHAGGA", "label": "SHAGGA", "shape": "dot", "size": 8, "title": "SHAGGA \u2014 Degree: 4"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "KEVAN", "label": "KEVAN", "shape": "dot", "size": 14, "title": "KEVAN \u2014 Degree: 7"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MYRCELLA", "label": "MYRCELLA", "shape": "dot", "size": 2, "title": "MYRCELLA \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BALON", "label": "BALON", "shape": "dot", "size": 4, "title": "BALON \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JOANNA", "label": "JOANNA", "shape": "dot", "size": 2, "title": "JOANNA \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LEO_LEFFORD", "label": "LEO_LEFFORD", "shape": "dot", "size": 6, "title": "LEO_LEFFORD \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "TYSHA", "label": "TYSHA", "shape": "dot", "size": 4, "title": "TYSHA \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ADDAM_MARBRAND", "label": "ADDAM_MARBRAND", "shape": "dot", "size": 6, "title": "ADDAM_MARBRAND \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JAREMY_RYKKER", "label": "JAREMY_RYKKER", "shape": "dot", "size": 6, "title": "JAREMY_RYKKER \u2014 Degree: 3"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "MACE", "label": "MACE", "shape": "dot", "size": 2, "title": "MACE \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BORCAS", "label": "BORCAS", "shape": "dot", "size": 4, "title": "BORCAS \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "BOWEN_MARSH", "label": "BOWEN_MARSH", "shape": "dot", "size": 4, "title": "BOWEN_MARSH \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "LUKE", "label": "LUKE", "shape": "dot", "size": 4, "title": "LUKE \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "RYGER_RIVERS", "label": "RYGER_RIVERS", "shape": "dot", "size": 2, "title": "RYGER_RIVERS \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "JOYEUSE", "label": "JOYEUSE", "shape": "dot", "size": 2, "title": "JOYEUSE \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "IROGENIA", "label": "IROGENIA", "shape": "dot", "size": 2, "title": "IROGENIA \u2014 Degree: 1"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "AEGON", "label": "AEGON", "shape": "dot", "size": 4, "title": "AEGON \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "GARED", "label": "GARED", "shape": "dot", "size": 4, "title": "GARED \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ROYCE", "label": "ROYCE", "shape": "dot", "size": 4, "title": "ROYCE \u2014 Degree: 2"}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "WAYMAR_ROYCE", "label": "WAYMAR_ROYCE", "shape": "dot", "size": 2, "title": "WAYMAR_ROYCE \u2014 Degree: 1"}]);
+                  edges = new vis.DataSet([{"Weight": 192, "from": "NED", "to": "ROBERT", "width": 1}, {"Weight": 107, "from": "NED", "to": "LITTLEFINGER", "width": 1}, {"Weight": 96, "from": "NED", "to": "VARYS", "width": 1}, {"Weight": 90, "from": "NED", "to": "ARYA", "width": 1}, {"Weight": 86, "from": "NED", "to": "CERSEI", "width": 1}, {"Weight": 69, "from": "NED", "to": "CATELYN", "width": 1}, {"Weight": 68, "from": "NED", "to": "PYCELLE", "width": 1}, {"Weight": 53, "from": "NED", "to": "JAIME", "width": 1}, {"Weight": 49, "from": "NED", "to": "SANSA", "width": 1}, {"Weight": 44, "from": "NED", "to": "JORY_CASSEL", "width": 1}, {"Weight": 39, "from": "NED", "to": "JOFFREY", "width": 1}, {"Weight": 30, "from": "NED", "to": "RENLY", "width": 1}, {"Weight": 29, "from": "NED", "to": "BRAN", "width": 1}, {"Weight": 29, "from": "NED", "to": "JON", "width": 1}, {"Weight": 25, "from": "NED", "to": "BARRISTAN", "width": 1}, {"Weight": 23, "from": "NED", "to": "ROBB", "width": 1}, {"Weight": 15, "from": "NED", "to": "YOREN", "width": 1}, {"Weight": 14, "from": "NED", "to": "BENJEN", "width": 1}, {"Weight": 13, "from": "NED", "to": "JANOS", "width": 1}, {"Weight": 13, "from": "NED", "to": "THEON", "width": 1}, {"Weight": 12, "from": "NED", "to": "GENDRY", "width": 1}, {"Weight": 12, "from": "NED", "to": "JON_ARRYN", "width": 1}, {"Weight": 11, "from": "NED", "to": "TYRION", "width": 1}, {"Weight": 11, "from": "NED", "to": "TYWIN", "width": 1}, {"Weight": 10, "from": "NED", "to": "HOUND", "width": 1}, {"Weight": 10, "from": "NED", "to": "RODRIK", "width": 1}, {"Weight": 10, "from": "NED", "to": "STANNIS", "width": 1}, {"Weight": 10, "from": "NED", "to": "TOBHO_MOTT", "width": 1}, {"Weight": 9, "from": "NED", "to": "MHAEGEN", "width": 1}, {"Weight": 9, "from": "NED", "to": "SEPTA_MORDANE", "width": 1}, {"Weight": 8, "from": "NED", "to": "AERYS", "width": 1}, {"Weight": 8, "from": "NED", "to": "BAELOR", "width": 1}, {"Weight": 6, "from": "NED", "to": "HUGH_OF_THE_VALE", "width": 1}, {"Weight": 6, "from": "NED", "to": "SYRIO_FOREL", "width": 1}, {"Weight": 6, "from": "NED", "to": "TOMARD", "width": 1}, {"Weight": 5, "from": "NED", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 5, "from": "NED", "to": "MOUNTAIN", "width": 1}, {"Weight": 4, "from": "NED", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 4, "from": "NED", "to": "LANCEL", "width": 1}, {"Weight": 4, "from": "NED", "to": "LORAS", "width": 1}, {"Weight": 4, "from": "NED", "to": "LYANNA", "width": 1}, {"Weight": 4, "from": "NED", "to": "RICKARD_STARK", "width": 1}, {"Weight": 3, "from": "NED", "to": "BERIC", "width": 1}, {"Weight": 3, "from": "NED", "to": "BRANDON_STARK", "width": 1}, {"Weight": 3, "from": "NED", "to": "DAENERYS", "width": 1}, {"Weight": 3, "from": "NED", "to": "JEOR", "width": 1}, {"Weight": 3, "from": "NED", "to": "MERYN_TRANT", "width": 1}, {"Weight": 3, "from": "NED", "to": "MYCAH", "width": 1}, {"Weight": 3, "from": "NED", "to": "PYP", "width": 1}, {"Weight": 3, "from": "NED", "to": "WILL", "width": 1}, {"Weight": 2, "from": "NED", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 2, "from": "NED", "to": "HIGH_SEPTON", "width": 1}, {"Weight": 2, "from": "NED", "to": "JORAH", "width": 1}, {"Weight": 2, "from": "NED", "to": "ROOSE_BOLTON", "width": 1}, {"Weight": 2, "from": "NED", "to": "ROS", "width": 1}, {"Weight": 2, "from": "NED", "to": "STEFFON", "width": 1}, {"Weight": 2, "from": "NED", "to": "VARLY", "width": 1}, {"Weight": 80, "from": "ROBERT", "to": "CERSEI", "width": 1}, {"Weight": 30, "from": "ROBERT", "to": "RENLY", "width": 1}, {"Weight": 28, "from": "ROBERT", "to": "JOFFREY", "width": 1}, {"Weight": 22, "from": "ROBERT", "to": "BARRISTAN", "width": 1}, {"Weight": 20, "from": "ROBERT", "to": "JAIME", "width": 1}, {"Weight": 17, "from": "ROBERT", "to": "SANSA", "width": 1}, {"Weight": 15, "from": "ROBERT", "to": "CATELYN", "width": 1}, {"Weight": 15, "from": "ROBERT", "to": "LANCEL", "width": 1}, {"Weight": 14, "from": "ROBERT", "to": "LITTLEFINGER", "width": 1}, {"Weight": 11, "from": "ROBERT", "to": "PYCELLE", "width": 1}, {"Weight": 11, "from": "ROBERT", "to": "VARYS", "width": 1}, {"Weight": 10, "from": "ROBERT", "to": "ARYA", "width": 1}, {"Weight": 8, "from": "ROBERT", "to": "TYWIN", "width": 1}, {"Weight": 7, "from": "ROBERT", "to": "AERYS", "width": 1}, {"Weight": 7, "from": "ROBERT", "to": "BRAN", "width": 1}, {"Weight": 7, "from": "ROBERT", "to": "JON_ARRYN", "width": 1}, {"Weight": 7, "from": "ROBERT", "to": "TYRION", "width": 1}, {"Weight": 7, "from": "ROBERT", "to": "VISERYS", "width": 1}, {"Weight": 6, "from": "ROBERT", "to": "HOUND", "width": 1}, {"Weight": 5, "from": "ROBERT", "to": "DAENERYS", "width": 1}, {"Weight": 5, "from": "ROBERT", "to": "ROBB", "width": 1}, {"Weight": 5, "from": "ROBERT", "to": "STANNIS", "width": 1}, {"Weight": 4, "from": "ROBERT", "to": "JORY_CASSEL", "width": 1}, {"Weight": 4, "from": "ROBERT", "to": "MOUNTAIN", "width": 1}, {"Weight": 3, "from": "ROBERT", "to": "JEOR", "width": 1}, {"Weight": 3, "from": "ROBERT", "to": "JON", "width": 1}, {"Weight": 3, "from": "ROBERT", "to": "LORAS", "width": 1}, {"Weight": 3, "from": "ROBERT", "to": "LYANNA", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "BENJEN", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "BERIC", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "DROGO", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "RHAEGAR", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "ROS", "width": 1}, {"Weight": 2, "from": "ROBERT", "to": "TOMMEN", "width": 1}, {"Weight": 154, "from": "DAENERYS", "to": "JORAH", "width": 1}, {"Weight": 91, "from": "DAENERYS", "to": "DROGO", "width": 1}, {"Weight": 66, "from": "DAENERYS", "to": "VISERYS", "width": 1}, {"Weight": 45, "from": "DAENERYS", "to": "MIRRI_MAZ_DUUR", "width": 1}, {"Weight": 34, "from": "DAENERYS", "to": "DOREAH", "width": 1}, {"Weight": 32, "from": "DAENERYS", "to": "IRRI", "width": 1}, {"Weight": 28, "from": "DAENERYS", "to": "QOTHO", "width": 1}, {"Weight": 19, "from": "DAENERYS", "to": "WINE_MERCHANT", "width": 1}, {"Weight": 17, "from": "DAENERYS", "to": "RAKHARO", "width": 1}, {"Weight": 13, "from": "DAENERYS", "to": "RHAEGO", "width": 1}, {"Weight": 10, "from": "DAENERYS", "to": "ILLYRIO", "width": 1}, {"Weight": 8, "from": "DAENERYS", "to": "MAGO", "width": 1}, {"Weight": 4, "from": "DAENERYS", "to": "VARYS", "width": 1}, {"Weight": 2, "from": "DAENERYS", "to": "CATELYN", "width": 1}, {"Weight": 2, "from": "DAENERYS", "to": "JHIQUI", "width": 1}, {"Weight": 2, "from": "DAENERYS", "to": "SANSA", "width": 1}, {"Weight": 43, "from": "JORAH", "to": "VISERYS", "width": 1}, {"Weight": 30, "from": "JORAH", "to": "RAKHARO", "width": 1}, {"Weight": 20, "from": "JORAH", "to": "DROGO", "width": 1}, {"Weight": 10, "from": "JORAH", "to": "WINE_MERCHANT", "width": 1}, {"Weight": 9, "from": "JORAH", "to": "IRRI", "width": 1}, {"Weight": 8, "from": "JORAH", "to": "MIRRI_MAZ_DUUR", "width": 1}, {"Weight": 5, "from": "JORAH", "to": "QOTHO", "width": 1}, {"Weight": 3, "from": "JORAH", "to": "RHAEGO", "width": 1}, {"Weight": 2, "from": "JORAH", "to": "AERYS", "width": 1}, {"Weight": 2, "from": "JORAH", "to": "DOREAH", "width": 1}, {"Weight": 2, "from": "JORAH", "to": "ILLYRIO", "width": 1}, {"Weight": 2, "from": "JORAH", "to": "LITTLE_BIRD", "width": 1}, {"Weight": 2, "from": "JORAH", "to": "VARYS", "width": 1}, {"Weight": 121, "from": "JON", "to": "SAM", "width": 1}, {"Weight": 60, "from": "JON", "to": "JEOR", "width": 1}, {"Weight": 45, "from": "JON", "to": "TYRION", "width": 1}, {"Weight": 42, "from": "JON", "to": "PYP", "width": 1}, {"Weight": 33, "from": "JON", "to": "BENJEN", "width": 1}, {"Weight": 28, "from": "JON", "to": "MAESTER_AEMON", "width": 1}, {"Weight": 25, "from": "JON", "to": "ROBB", "width": 1}, {"Weight": 24, "from": "JON", "to": "GRENN", "width": 1}, {"Weight": 20, "from": "JON", "to": "ALLISER_THORNE", "width": 1}, {"Weight": 20, "from": "JON", "to": "ARYA", "width": 1}, {"Weight": 19, "from": "JON", "to": "BRAN", "width": 1}, {"Weight": 14, "from": "JON", "to": "CATELYN", "width": 1}, {"Weight": 10, "from": "JON", "to": "JAIME", "width": 1}, {"Weight": 7, "from": "JON", "to": "RAST", "width": 1}, {"Weight": 7, "from": "JON", "to": "THEON", "width": 1}, {"Weight": 5, "from": "JON", "to": "OTHELL_YARWYCK", "width": 1}, {"Weight": 5, "from": "JON", "to": "OTHOR", "width": 1}, {"Weight": 4, "from": "JON", "to": "DAREON", "width": 1}, {"Weight": 3, "from": "JON", "to": "CERSEI", "width": 1}, {"Weight": 3, "from": "JON", "to": "WILL", "width": 1}, {"Weight": 2, "from": "JON", "to": "BRANDON_STARK", "width": 1}, {"Weight": 2, "from": "JON", "to": "JOFFREY", "width": 1}, {"Weight": 2, "from": "JON", "to": "RODRIK", "width": 1}, {"Weight": 2, "from": "JON", "to": "ROS", "width": 1}, {"Weight": 30, "from": "SAM", "to": "PYP", "width": 1}, {"Weight": 18, "from": "SAM", "to": "ALLISER_THORNE", "width": 1}, {"Weight": 17, "from": "SAM", "to": "JEOR", "width": 1}, {"Weight": 16, "from": "SAM", "to": "GRENN", "width": 1}, {"Weight": 6, "from": "SAM", "to": "MAESTER_AEMON", "width": 1}, {"Weight": 6, "from": "SAM", "to": "OTHELL_YARWYCK", "width": 1}, {"Weight": 6, "from": "SAM", "to": "RAST", "width": 1}, {"Weight": 4, "from": "SAM", "to": "DAREON", "width": 1}, {"Weight": 2, "from": "SAM", "to": "MELESSA", "width": 1}, {"Weight": 2, "from": "SAM", "to": "OTHOR", "width": 1}, {"Weight": 2, "from": "SAM", "to": "RANDYLL", "width": 1}, {"Weight": 73, "from": "LITTLEFINGER", "to": "VARYS", "width": 1}, {"Weight": 26, "from": "LITTLEFINGER", "to": "CATELYN", "width": 1}, {"Weight": 22, "from": "LITTLEFINGER", "to": "SANSA", "width": 1}, {"Weight": 19, "from": "LITTLEFINGER", "to": "PYCELLE", "width": 1}, {"Weight": 19, "from": "LITTLEFINGER", "to": "ROS", "width": 1}, {"Weight": 17, "from": "LITTLEFINGER", "to": "RENLY", "width": 1}, {"Weight": 12, "from": "LITTLEFINGER", "to": "JOFFREY", "width": 1}, {"Weight": 8, "from": "LITTLEFINGER", "to": "CERSEI", "width": 1}, {"Weight": 7, "from": "LITTLEFINGER", "to": "JORY_CASSEL", "width": 1}, {"Weight": 6, "from": "LITTLEFINGER", "to": "MOUNTAIN", "width": 1}, {"Weight": 6, "from": "LITTLEFINGER", "to": "TYRION", "width": 1}, {"Weight": 5, "from": "LITTLEFINGER", "to": "ARYA", "width": 1}, {"Weight": 5, "from": "LITTLEFINGER", "to": "HOUND", "width": 1}, {"Weight": 5, "from": "LITTLEFINGER", "to": "JAIME", "width": 1}, {"Weight": 5, "from": "LITTLEFINGER", "to": "JON_ARRYN", "width": 1}, {"Weight": 4, "from": "LITTLEFINGER", "to": "BARRISTAN", "width": 1}, {"Weight": 4, "from": "LITTLEFINGER", "to": "HUGH_OF_THE_VALE", "width": 1}, {"Weight": 4, "from": "LITTLEFINGER", "to": "SEPTA_MORDANE", "width": 1}, {"Weight": 4, "from": "LITTLEFINGER", "to": "TYWIN", "width": 1}, {"Weight": 3, "from": "LITTLEFINGER", "to": "STANNIS", "width": 1}, {"Weight": 2, "from": "LITTLEFINGER", "to": "JANOS", "width": 1}, {"Weight": 2, "from": "LITTLEFINGER", "to": "LORAS", "width": 1}, {"Weight": 2, "from": "LITTLEFINGER", "to": "MHAEGEN", "width": 1}, {"Weight": 2, "from": "LITTLEFINGER", "to": "YOREN", "width": 1}, {"Weight": 15, "from": "VARYS", "to": "JOFFREY", "width": 1}, {"Weight": 15, "from": "VARYS", "to": "PYCELLE", "width": 1}, {"Weight": 13, "from": "VARYS", "to": "CERSEI", "width": 1}, {"Weight": 11, "from": "VARYS", "to": "CATELYN", "width": 1}, {"Weight": 9, "from": "VARYS", "to": "ILLYRIO", "width": 1}, {"Weight": 9, "from": "VARYS", "to": "RENLY", "width": 1}, {"Weight": 8, "from": "VARYS", "to": "SANSA", "width": 1}, {"Weight": 7, "from": "VARYS", "to": "ARYA", "width": 1}, {"Weight": 6, "from": "VARYS", "to": "BARRISTAN", "width": 1}, {"Weight": 5, "from": "VARYS", "to": "JANOS", "width": 1}, {"Weight": 3, "from": "VARYS", "to": "YOREN", "width": 1}, {"Weight": 2, "from": "VARYS", "to": "GENDRY", "width": 1}, {"Weight": 2, "from": "VARYS", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 2, "from": "VARYS", "to": "JON_ARRYN", "width": 1}, {"Weight": 2, "from": "VARYS", "to": "ROBB", "width": 1}, {"Weight": 2, "from": "VARYS", "to": "TYRION", "width": 1}, {"Weight": 27, "from": "DROGO", "to": "VISERYS", "width": 1}, {"Weight": 10, "from": "DROGO", "to": "MAGO", "width": 1}, {"Weight": 9, "from": "DROGO", "to": "MIRRI_MAZ_DUUR", "width": 1}, {"Weight": 6, "from": "DROGO", "to": "ILLYRIO", "width": 1}, {"Weight": 6, "from": "DROGO", "to": "QOTHO", "width": 1}, {"Weight": 6, "from": "DROGO", "to": "RHAEGO", "width": 1}, {"Weight": 5, "from": "DROGO", "to": "RAKHARO", "width": 1}, {"Weight": 3, "from": "DROGO", "to": "COHOLLO", "width": 1}, {"Weight": 3, "from": "DROGO", "to": "DOREAH", "width": 1}, {"Weight": 2, "from": "DROGO", "to": "IRRI", "width": 1}, {"Weight": 53, "from": "ARYA", "to": "SANSA", "width": 1}, {"Weight": 44, "from": "ARYA", "to": "SYRIO_FOREL", "width": 1}, {"Weight": 24, "from": "ARYA", "to": "JOFFREY", "width": 1}, {"Weight": 18, "from": "ARYA", "to": "YOREN", "width": 1}, {"Weight": 11, "from": "ARYA", "to": "SEPTA_MORDANE", "width": 1}, {"Weight": 9, "from": "ARYA", "to": "CERSEI", "width": 1}, {"Weight": 7, "from": "ARYA", "to": "CATELYN", "width": 1}, {"Weight": 7, "from": "ARYA", "to": "GENDRY", "width": 1}, {"Weight": 7, "from": "ARYA", "to": "HOUND", "width": 1}, {"Weight": 7, "from": "ARYA", "to": "JORY_CASSEL", "width": 1}, {"Weight": 7, "from": "ARYA", "to": "STABLE_BOY", "width": 1}, {"Weight": 6, "from": "ARYA", "to": "ROBB", "width": 1}, {"Weight": 5, "from": "ARYA", "to": "BAELOR", "width": 1}, {"Weight": 5, "from": "ARYA", "to": "BRAN", "width": 1}, {"Weight": 5, "from": "ARYA", "to": "HOT_PIE", "width": 1}, {"Weight": 5, "from": "ARYA", "to": "MERYN_TRANT", "width": 1}, {"Weight": 5, "from": "ARYA", "to": "MYCAH", "width": 1}, {"Weight": 4, "from": "ARYA", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 3, "from": "ARYA", "to": "JAIME", "width": 1}, {"Weight": 3, "from": "ARYA", "to": "PYCELLE", "width": 1}, {"Weight": 2, "from": "ARYA", "to": "ILLYRIO", "width": 1}, {"Weight": 2, "from": "ARYA", "to": "LOMMY_GREENHANDS", "width": 1}, {"Weight": 2, "from": "ARYA", "to": "TYRION", "width": 1}, {"Weight": 90, "from": "CATELYN", "to": "ROBB", "width": 1}, {"Weight": 41, "from": "CATELYN", "to": "TYRION", "width": 1}, {"Weight": 34, "from": "CATELYN", "to": "WALDER", "width": 1}, {"Weight": 30, "from": "CATELYN", "to": "LYSA", "width": 1}, {"Weight": 28, "from": "CATELYN", "to": "BRAN", "width": 1}, {"Weight": 28, "from": "CATELYN", "to": "JAIME", "width": 1}, {"Weight": 28, "from": "CATELYN", "to": "RODRIK", "width": 1}, {"Weight": 26, "from": "CATELYN", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 22, "from": "CATELYN", "to": "CERSEI", "width": 1}, {"Weight": 16, "from": "CATELYN", "to": "THEON", "width": 1}, {"Weight": 14, "from": "CATELYN", "to": "SANSA", "width": 1}, {"Weight": 13, "from": "CATELYN", "to": "VARDIS_EGEN", "width": 1}, {"Weight": 11, "from": "CATELYN", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 10, "from": "CATELYN", "to": "ROBIN", "width": 1}, {"Weight": 7, "from": "CATELYN", "to": "BRONN", "width": 1}, {"Weight": 5, "from": "CATELYN", "to": "MORD", "width": 1}, {"Weight": 4, "from": "CATELYN", "to": "JON_ARRYN", "width": 1}, {"Weight": 4, "from": "CATELYN", "to": "MARILLION", "width": 1}, {"Weight": 4, "from": "CATELYN", "to": "TYWIN", "width": 1}, {"Weight": 3, "from": "CATELYN", "to": "ASSASSIN", "width": 1}, {"Weight": 3, "from": "CATELYN", "to": "HOSTER", "width": 1}, {"Weight": 3, "from": "CATELYN", "to": "JOFFREY", "width": 1}, {"Weight": 3, "from": "CATELYN", "to": "MASHA_HEDDLE", "width": 1}, {"Weight": 3, "from": "CATELYN", "to": "YOREN", "width": 1}, {"Weight": 2, "from": "CATELYN", "to": "AERYS", "width": 1}, {"Weight": 2, "from": "CATELYN", "to": "BENJEN", "width": 1}, {"Weight": 2, "from": "CATELYN", "to": "BRANDON_STARK", "width": 1}, {"Weight": 2, "from": "CATELYN", "to": "HOUND", "width": 1}, {"Weight": 2, "from": "CATELYN", "to": "STEVRON_FREY", "width": 1}, {"Weight": 60, "from": "ROBB", "to": "THEON", "width": 1}, {"Weight": 48, "from": "ROBB", "to": "BRAN", "width": 1}, {"Weight": 31, "from": "ROBB", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 17, "from": "ROBB", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 16, "from": "ROBB", "to": "TYRION", "width": 1}, {"Weight": 12, "from": "ROBB", "to": "JOFFREY", "width": 1}, {"Weight": 11, "from": "ROBB", "to": "RODRIK", "width": 1}, {"Weight": 10, "from": "ROBB", "to": "JAIME", "width": 1}, {"Weight": 9, "from": "ROBB", "to": "SANSA", "width": 1}, {"Weight": 8, "from": "ROBB", "to": "CERSEI", "width": 1}, {"Weight": 8, "from": "ROBB", "to": "OSHA", "width": 1}, {"Weight": 5, "from": "ROBB", "to": "BENJEN", "width": 1}, {"Weight": 5, "from": "ROBB", "to": "JONOS_BRACKEN", "width": 1}, {"Weight": 5, "from": "ROBB", "to": "TYWIN", "width": 1}, {"Weight": 5, "from": "ROBB", "to": "WALDER", "width": 1}, {"Weight": 4, "from": "ROBB", "to": "OLD_NAN", "width": 1}, {"Weight": 3, "from": "ROBB", "to": "HODOR", "width": 1}, {"Weight": 3, "from": "ROBB", "to": "RENLY", "width": 1}, {"Weight": 3, "from": "ROBB", "to": "RICKON", "width": 1}, {"Weight": 2, "from": "ROBB", "to": "ASSASSIN", "width": 1}, {"Weight": 2, "from": "ROBB", "to": "GALBART_GLOVER", "width": 1}, {"Weight": 2, "from": "ROBB", "to": "HOUND", "width": 1}, {"Weight": 2, "from": "ROBB", "to": "RICKARD_KARSTARK", "width": 1}, {"Weight": 2, "from": "ROBB", "to": "STANNIS", "width": 1}, {"Weight": 86, "from": "BRONN", "to": "TYRION", "width": 1}, {"Weight": 11, "from": "BRONN", "to": "SHAE", "width": 1}, {"Weight": 6, "from": "BRONN", "to": "RODRIK", "width": 1}, {"Weight": 5, "from": "BRONN", "to": "LYSA", "width": 1}, {"Weight": 5, "from": "BRONN", "to": "SHAGGA", "width": 1}, {"Weight": 5, "from": "BRONN", "to": "TYWIN", "width": 1}, {"Weight": 4, "from": "BRONN", "to": "VARDIS_EGEN", "width": 1}, {"Weight": 3, "from": "BRONN", "to": "MORD", "width": 1}, {"Weight": 3, "from": "BRONN", "to": "ROBIN", "width": 1}, {"Weight": 2, "from": "BRONN", "to": "KEVAN", "width": 1}, {"Weight": 2, "from": "BRONN", "to": "MARILLION", "width": 1}, {"Weight": 73, "from": "TYRION", "to": "SHAE", "width": 1}, {"Weight": 61, "from": "TYRION", "to": "TYWIN", "width": 1}, {"Weight": 34, "from": "TYRION", "to": "JAIME", "width": 1}, {"Weight": 31, "from": "TYRION", "to": "MORD", "width": 1}, {"Weight": 30, "from": "TYRION", "to": "LYSA", "width": 1}, {"Weight": 22, "from": "TYRION", "to": "SHAGGA", "width": 1}, {"Weight": 22, "from": "TYRION", "to": "YOREN", "width": 1}, {"Weight": 19, "from": "TYRION", "to": "THEON", "width": 1}, {"Weight": 18, "from": "TYRION", "to": "CERSEI", "width": 1}, {"Weight": 17, "from": "TYRION", "to": "BENJEN", "width": 1}, {"Weight": 17, "from": "TYRION", "to": "ROS", "width": 1}, {"Weight": 15, "from": "TYRION", "to": "BRAN", "width": 1}, {"Weight": 15, "from": "TYRION", "to": "JEOR", "width": 1}, {"Weight": 15, "from": "TYRION", "to": "JOFFREY", "width": 1}, {"Weight": 14, "from": "TYRION", "to": "KEVAN", "width": 1}, {"Weight": 10, "from": "TYRION", "to": "HOUND", "width": 1}, {"Weight": 9, "from": "TYRION", "to": "ROBIN", "width": 1}, {"Weight": 9, "from": "TYRION", "to": "RODRIK", "width": 1}, {"Weight": 9, "from": "TYRION", "to": "VARDIS_EGEN", "width": 1}, {"Weight": 7, "from": "TYRION", "to": "MAESTER_AEMON", "width": 1}, {"Weight": 7, "from": "TYRION", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 6, "from": "TYRION", "to": "GRENN", "width": 1}, {"Weight": 6, "from": "TYRION", "to": "PYP", "width": 1}, {"Weight": 5, "from": "TYRION", "to": "MARILLION", "width": 1}, {"Weight": 5, "from": "TYRION", "to": "MASHA_HEDDLE", "width": 1}, {"Weight": 3, "from": "TYRION", "to": "HODOR", "width": 1}, {"Weight": 3, "from": "TYRION", "to": "MYRCELLA", "width": 1}, {"Weight": 3, "from": "TYRION", "to": "RAST", "width": 1}, {"Weight": 2, "from": "TYRION", "to": "BALON", "width": 1}, {"Weight": 2, "from": "TYRION", "to": "JOANNA", "width": 1}, {"Weight": 2, "from": "TYRION", "to": "LEO_LEFFORD", "width": 1}, {"Weight": 2, "from": "TYRION", "to": "TYSHA", "width": 1}, {"Weight": 54, "from": "CERSEI", "to": "JOFFREY", "width": 1}, {"Weight": 46, "from": "CERSEI", "to": "JAIME", "width": 1}, {"Weight": 36, "from": "CERSEI", "to": "SANSA", "width": 1}, {"Weight": 13, "from": "CERSEI", "to": "BARRISTAN", "width": 1}, {"Weight": 9, "from": "CERSEI", "to": "PYCELLE", "width": 1}, {"Weight": 4, "from": "CERSEI", "to": "BRAN", "width": 1}, {"Weight": 4, "from": "CERSEI", "to": "HOUND", "width": 1}, {"Weight": 3, "from": "CERSEI", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 3, "from": "CERSEI", "to": "JON_ARRYN", "width": 1}, {"Weight": 3, "from": "CERSEI", "to": "LANCEL", "width": 1}, {"Weight": 3, "from": "CERSEI", "to": "RENLY", "width": 1}, {"Weight": 3, "from": "CERSEI", "to": "TYWIN", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "BAELOR", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "BENJEN", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "JEOR", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "LYANNA", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "MERYN_TRANT", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "ROS", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "STANNIS", "width": 1}, {"Weight": 2, "from": "CERSEI", "to": "YOREN", "width": 1}, {"Weight": 4, "from": "SHAE", "to": "TYWIN", "width": 1}, {"Weight": 69, "from": "JOFFREY", "to": "SANSA", "width": 1}, {"Weight": 16, "from": "JOFFREY", "to": "HOUND", "width": 1}, {"Weight": 14, "from": "JOFFREY", "to": "MARILLION", "width": 1}, {"Weight": 13, "from": "JOFFREY", "to": "PYCELLE", "width": 1}, {"Weight": 12, "from": "JOFFREY", "to": "MERYN_TRANT", "width": 1}, {"Weight": 10, "from": "JOFFREY", "to": "MYCAH", "width": 1}, {"Weight": 6, "from": "JOFFREY", "to": "JAIME", "width": 1}, {"Weight": 5, "from": "JOFFREY", "to": "BARRISTAN", "width": 1}, {"Weight": 5, "from": "JOFFREY", "to": "SEPTA_MORDANE", "width": 1}, {"Weight": 4, "from": "JOFFREY", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 3, "from": "JOFFREY", "to": "RENLY", "width": 1}, {"Weight": 3, "from": "JOFFREY", "to": "TYWIN", "width": 1}, {"Weight": 3, "from": "JOFFREY", "to": "YOREN", "width": 1}, {"Weight": 2, "from": "JOFFREY", "to": "BAELOR", "width": 1}, {"Weight": 2, "from": "JOFFREY", "to": "JEOR", "width": 1}, {"Weight": 2, "from": "JOFFREY", "to": "TOMMEN", "width": 1}, {"Weight": 2, "from": "JOFFREY", "to": "WILL", "width": 1}, {"Weight": 64, "from": "SANSA", "to": "SEPTA_MORDANE", "width": 1}, {"Weight": 19, "from": "SANSA", "to": "HOUND", "width": 1}, {"Weight": 13, "from": "SANSA", "to": "PYCELLE", "width": 1}, {"Weight": 10, "from": "SANSA", "to": "MERYN_TRANT", "width": 1}, {"Weight": 5, "from": "SANSA", "to": "RENLY", "width": 1}, {"Weight": 4, "from": "SANSA", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 4, "from": "SANSA", "to": "LORAS", "width": 1}, {"Weight": 4, "from": "SANSA", "to": "MOUNTAIN", "width": 1}, {"Weight": 4, "from": "SANSA", "to": "MYCAH", "width": 1}, {"Weight": 4, "from": "SANSA", "to": "YOREN", "width": 1}, {"Weight": 2, "from": "SANSA", "to": "AERYS", "width": 1}, {"Weight": 2, "from": "SANSA", "to": "BAELOR", "width": 1}, {"Weight": 2, "from": "SANSA", "to": "HUGH_OF_THE_VALE", "width": 1}, {"Weight": 2, "from": "SANSA", "to": "JAIME", "width": 1}, {"Weight": 2, "from": "SANSA", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 2, "from": "SANSA", "to": "STANNIS", "width": 1}, {"Weight": 9, "from": "PYCELLE", "to": "ROS", "width": 1}, {"Weight": 8, "from": "PYCELLE", "to": "RENLY", "width": 1}, {"Weight": 4, "from": "PYCELLE", "to": "BARRISTAN", "width": 1}, {"Weight": 3, "from": "PYCELLE", "to": "JON_ARRYN", "width": 1}, {"Weight": 2, "from": "PYCELLE", "to": "BAELOR", "width": 1}, {"Weight": 2, "from": "PYCELLE", "to": "JANOS", "width": 1}, {"Weight": 2, "from": "PYCELLE", "to": "TYWIN", "width": 1}, {"Weight": 2, "from": "PYCELLE", "to": "YOREN", "width": 1}, {"Weight": 30, "from": "VISERYS", "to": "DOREAH", "width": 1}, {"Weight": 25, "from": "VISERYS", "to": "ILLYRIO", "width": 1}, {"Weight": 3, "from": "VISERYS", "to": "IRRI", "width": 1}, {"Weight": 3, "from": "VISERYS", "to": "RAKHARO", "width": 1}, {"Weight": 2, "from": "VISERYS", "to": "RHAEGO", "width": 1}, {"Weight": 2, "from": "SEPTA_MORDANE", "to": "AERYS", "width": 1}, {"Weight": 34, "from": "TYWIN", "to": "JAIME", "width": 1}, {"Weight": 12, "from": "TYWIN", "to": "KEVAN", "width": 1}, {"Weight": 6, "from": "TYWIN", "to": "SHAGGA", "width": 1}, {"Weight": 3, "from": "TYWIN", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 2, "from": "TYWIN", "to": "ADDAM_MARBRAND", "width": 1}, {"Weight": 2, "from": "TYWIN", "to": "RODRIK", "width": 1}, {"Weight": 10, "from": "JEOR", "to": "PYP", "width": 1}, {"Weight": 9, "from": "JEOR", "to": "ALLISER_THORNE", "width": 1}, {"Weight": 9, "from": "JEOR", "to": "MAESTER_AEMON", "width": 1}, {"Weight": 6, "from": "JEOR", "to": "OTHELL_YARWYCK", "width": 1}, {"Weight": 6, "from": "JEOR", "to": "OTHOR", "width": 1}, {"Weight": 4, "from": "JEOR", "to": "GRENN", "width": 1}, {"Weight": 2, "from": "JEOR", "to": "BENJEN", "width": 1}, {"Weight": 2, "from": "JEOR", "to": "DAREON", "width": 1}, {"Weight": 2, "from": "JEOR", "to": "JAREMY_RYKKER", "width": 1}, {"Weight": 40, "from": "THEON", "to": "ROS", "width": 1}, {"Weight": 26, "from": "THEON", "to": "BRAN", "width": 1}, {"Weight": 25, "from": "THEON", "to": "OSHA", "width": 1}, {"Weight": 13, "from": "THEON", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 11, "from": "THEON", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 8, "from": "THEON", "to": "RODRIK", "width": 1}, {"Weight": 4, "from": "THEON", "to": "JAIME", "width": 1}, {"Weight": 3, "from": "THEON", "to": "BALON", "width": 1}, {"Weight": 3, "from": "THEON", "to": "HODOR", "width": 1}, {"Weight": 3, "from": "THEON", "to": "WALDER", "width": 1}, {"Weight": 2, "from": "THEON", "to": "JORY_CASSEL", "width": 1}, {"Weight": 2, "from": "THEON", "to": "OLD_NAN", "width": 1}, {"Weight": 2, "from": "THEON", "to": "RICKARD_KARSTARK", "width": 1}, {"Weight": 2, "from": "THEON", "to": "WILL", "width": 1}, {"Weight": 53, "from": "BRAN", "to": "MAESTER_LUWIN", "width": 1}, {"Weight": 29, "from": "BRAN", "to": "OSHA", "width": 1}, {"Weight": 14, "from": "BRAN", "to": "RICKON", "width": 1}, {"Weight": 11, "from": "BRAN", "to": "HODOR", "width": 1}, {"Weight": 9, "from": "BRAN", "to": "JAIME", "width": 1}, {"Weight": 9, "from": "BRAN", "to": "OLD_NAN", "width": 1}, {"Weight": 5, "from": "BRAN", "to": "RODRIK", "width": 1}, {"Weight": 3, "from": "BRAN", "to": "WILL", "width": 1}, {"Weight": 2, "from": "BRAN", "to": "ASSASSIN", "width": 1}, {"Weight": 2, "from": "BRAN", "to": "BRANDON_STARK", "width": 1}, {"Weight": 2, "from": "BRAN", "to": "HOUND", "width": 1}, {"Weight": 12, "from": "MAESTER_LUWIN", "to": "OSHA", "width": 1}, {"Weight": 2, "from": "MAESTER_LUWIN", "to": "RODRIK", "width": 1}, {"Weight": 27, "from": "JAIME", "to": "JORY_CASSEL", "width": 1}, {"Weight": 5, "from": "JAIME", "to": "KEVAN", "width": 1}, {"Weight": 4, "from": "JAIME", "to": "BARRISTAN", "width": 1}, {"Weight": 4, "from": "JAIME", "to": "ROS", "width": 1}, {"Weight": 3, "from": "JAIME", "to": "AERYS", "width": 1}, {"Weight": 3, "from": "JAIME", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 2, "from": "JAIME", "to": "HOUND", "width": 1}, {"Weight": 2, "from": "JAIME", "to": "JON_ARRYN", "width": 1}, {"Weight": 2, "from": "JAIME", "to": "RICKARD_STARK", "width": 1}, {"Weight": 2, "from": "JAIME", "to": "TYSHA", "width": 1}, {"Weight": 47, "from": "LORAS", "to": "RENLY", "width": 1}, {"Weight": 4, "from": "LORAS", "to": "HOUND", "width": 1}, {"Weight": 4, "from": "LORAS", "to": "MOUNTAIN", "width": 1}, {"Weight": 2, "from": "LORAS", "to": "MACE", "width": 1}, {"Weight": 11, "from": "RENLY", "to": "STANNIS", "width": 1}, {"Weight": 3, "from": "RENLY", "to": "BARRISTAN", "width": 1}, {"Weight": 3, "from": "RENLY", "to": "JANOS", "width": 1}, {"Weight": 2, "from": "RENLY", "to": "AERYS", "width": 1}, {"Weight": 2, "from": "RENLY", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 2, "from": "RENLY", "to": "LANCEL", "width": 1}, {"Weight": 2, "from": "RENLY", "to": "TOMARD", "width": 1}, {"Weight": 15, "from": "MIRRI_MAZ_DUUR", "to": "QOTHO", "width": 1}, {"Weight": 4, "from": "MIRRI_MAZ_DUUR", "to": "RAKHARO", "width": 1}, {"Weight": 11, "from": "SYRIO_FOREL", "to": "MERYN_TRANT", "width": 1}, {"Weight": 7, "from": "JORY_CASSEL", "to": "HUGH_OF_THE_VALE", "width": 1}, {"Weight": 2, "from": "JORY_CASSEL", "to": "MHAEGEN", "width": 1}, {"Weight": 36, "from": "PYP", "to": "GRENN", "width": 1}, {"Weight": 10, "from": "PYP", "to": "ALLISER_THORNE", "width": 1}, {"Weight": 10, "from": "PYP", "to": "RAST", "width": 1}, {"Weight": 8, "from": "PYP", "to": "DAREON", "width": 1}, {"Weight": 6, "from": "PYP", "to": "MAESTER_AEMON", "width": 1}, {"Weight": 2, "from": "PYP", "to": "BORCAS", "width": 1}, {"Weight": 2, "from": "PYP", "to": "BOWEN_MARSH", "width": 1}, {"Weight": 2, "from": "PYP", "to": "JAREMY_RYKKER", "width": 1}, {"Weight": 2, "from": "PYP", "to": "LUKE", "width": 1}, {"Weight": 2, "from": "PYP", "to": "OTHELL_YARWYCK", "width": 1}, {"Weight": 2, "from": "PYP", "to": "OTHOR", "width": 1}, {"Weight": 7, "from": "GRENN", "to": "ALLISER_THORNE", "width": 1}, {"Weight": 6, "from": "GRENN", "to": "RAST", "width": 1}, {"Weight": 2, "from": "GRENN", "to": "DAREON", "width": 1}, {"Weight": 4, "from": "WALDER", "to": "RYGER_RIVERS", "width": 1}, {"Weight": 4, "from": "WALDER", "to": "STEVRON_FREY", "width": 1}, {"Weight": 3, "from": "WALDER", "to": "HOSTER", "width": 1}, {"Weight": 2, "from": "WALDER", "to": "GREATJON_UMBER", "width": 1}, {"Weight": 2, "from": "WALDER", "to": "JOYEUSE", "width": 1}, {"Weight": 5, "from": "DOREAH", "to": "IRRI", "width": 1}, {"Weight": 3, "from": "DOREAH", "to": "WINE_MERCHANT", "width": 1}, {"Weight": 2, "from": "DOREAH", "to": "IROGENIA", "width": 1}, {"Weight": 2, "from": "DOREAH", "to": "JHIQUI", "width": 1}, {"Weight": 5, "from": "BENJEN", "to": "YOREN", "width": 1}, {"Weight": 11, "from": "IRRI", "to": "RAKHARO", "width": 1}, {"Weight": 3, "from": "IRRI", "to": "JHIQUI", "width": 1}, {"Weight": 7, "from": "GREATJON_UMBER", "to": "RODRIK", "width": 1}, {"Weight": 2, "from": "GREATJON_UMBER", "to": "GALBART_GLOVER", "width": 1}, {"Weight": 2, "from": "GREATJON_UMBER", "to": "RICKARD_KARSTARK", "width": 1}, {"Weight": 2, "from": "GREATJON_UMBER", "to": "STANNIS", "width": 1}, {"Weight": 5, "from": "MORD", "to": "LYSA", "width": 1}, {"Weight": 3, "from": "MORD", "to": "ROBIN", "width": 1}, {"Weight": 3, "from": "MORD", "to": "VARDIS_EGEN", "width": 1}, {"Weight": 2, "from": "MORD", "to": "RODRIK", "width": 1}, {"Weight": 30, "from": "LYSA", "to": "ROBIN", "width": 1}, {"Weight": 7, "from": "LYSA", "to": "VARDIS_EGEN", "width": 1}, {"Weight": 5, "from": "LYSA", "to": "JON_ARRYN", "width": 1}, {"Weight": 3, "from": "RAKHARO", "to": "QOTHO", "width": 1}, {"Weight": 3, "from": "RAKHARO", "to": "WINE_MERCHANT", "width": 1}, {"Weight": 3, "from": "ROBIN", "to": "JON_ARRYN", "width": 1}, {"Weight": 3, "from": "ROBIN", "to": "VARDIS_EGEN", "width": 1}, {"Weight": 3, "from": "OSHA", "to": "RICKON", "width": 1}, {"Weight": 2, "from": "OSHA", "to": "HODOR", "width": 1}, {"Weight": 5, "from": "RODRIK", "to": "MARILLION", "width": 1}, {"Weight": 2, "from": "MAESTER_AEMON", "to": "AEGON", "width": 1}, {"Weight": 2, "from": "MAESTER_AEMON", "to": "AERYS", "width": 1}, {"Weight": 2, "from": "MAESTER_AEMON", "to": "ALLISER_THORNE", "width": 1}, {"Weight": 2, "from": "MAESTER_AEMON", "to": "DAREON", "width": 1}, {"Weight": 3, "from": "BARRISTAN", "to": "LANCEL", "width": 1}, {"Weight": 2, "from": "BARRISTAN", "to": "AERYS", "width": 1}, {"Weight": 2, "from": "SHAGGA", "to": "KEVAN", "width": 1}, {"Weight": 4, "from": "YOREN", "to": "BAELOR", "width": 1}, {"Weight": 4, "from": "YOREN", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 2, "from": "YOREN", "to": "GENDRY", "width": 1}, {"Weight": 2, "from": "YOREN", "to": "HOUND", "width": 1}, {"Weight": 2, "from": "YOREN", "to": "MARILLION", "width": 1}, {"Weight": 4, "from": "ALLISER_THORNE", "to": "RAST", "width": 1}, {"Weight": 3, "from": "ALLISER_THORNE", "to": "OTHELL_YARWYCK", "width": 1}, {"Weight": 8, "from": "HOUND", "to": "MERYN_TRANT", "width": 1}, {"Weight": 5, "from": "HOUND", "to": "MOUNTAIN", "width": 1}, {"Weight": 3, "from": "HOUND", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 2, "from": "HOUND", "to": "BAELOR", "width": 1}, {"Weight": 2, "from": "MARILLION", "to": "MERYN_TRANT", "width": 1}, {"Weight": 3, "from": "KEVAN", "to": "ADDAM_MARBRAND", "width": 1}, {"Weight": 2, "from": "KEVAN", "to": "LEO_LEFFORD", "width": 1}, {"Weight": 5, "from": "GENDRY", "to": "TOBHO_MOTT", "width": 1}, {"Weight": 3, "from": "GENDRY", "to": "HOT_PIE", "width": 1}, {"Weight": 12, "from": "HOT_PIE", "to": "LOMMY_GREENHANDS", "width": 1}, {"Weight": 2, "from": "MERYN_TRANT", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 2, "from": "JON_ARRYN", "to": "HUGH_OF_THE_VALE", "width": 1}, {"Weight": 2, "from": "STANNIS", "to": "TOMARD", "width": 1}, {"Weight": 2, "from": "RAST", "to": "DAREON", "width": 1}, {"Weight": 4, "from": "AERYS", "to": "RICKARD_STARK", "width": 1}, {"Weight": 3, "from": "AERYS", "to": "RHAEGAR", "width": 1}, {"Weight": 2, "from": "AERYS", "to": "AEGON", "width": 1}, {"Weight": 3, "from": "BAELOR", "to": "ILYN_PAYNE", "width": 1}, {"Weight": 2, "from": "DAREON", "to": "BORCAS", "width": 1}, {"Weight": 2, "from": "DAREON", "to": "BOWEN_MARSH", "width": 1}, {"Weight": 2, "from": "DAREON", "to": "LUKE", "width": 1}, {"Weight": 2, "from": "HUGH_OF_THE_VALE", "to": "MOUNTAIN", "width": 1}, {"Weight": 2, "from": "OTHELL_YARWYCK", "to": "JAREMY_RYKKER", "width": 1}, {"Weight": 5, "from": "GARED", "to": "ROYCE", "width": 1}, {"Weight": 4, "from": "GARED", "to": "WILL", "width": 1}, {"Weight": 4, "from": "ROYCE", "to": "WILL", "width": 1}, {"Weight": 2, "from": "JONOS_BRACKEN", "to": "GALBART_GLOVER", "width": 1}, {"Weight": 2, "from": "RICKARD_STARK", "to": "BRANDON_STARK", "width": 1}, {"Weight": 4, "from": "WILL", "to": "WAYMAR_ROYCE", "width": 1}, {"Weight": 3, "from": "ADDAM_MARBRAND", "to": "LEO_LEFFORD", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.2,
+            "damping": 0.09,
+            "gravitationalConstant": -8000,
+            "springConstant": 0.01,
+            "springLength": 150
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
